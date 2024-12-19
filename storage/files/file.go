@@ -1,6 +1,7 @@
 package files
 
 import (
+	"context"
 	"encoding/gob"
 	"errors"
 	"fmt"
@@ -22,8 +23,8 @@ func New(basePath string) Storage {
 	return Storage{basePath: basePath}
 }
 
-func (s Storage) Save(page *storage.Page) (err error) {
-	defer func() { err = e.WarpIfErr("can't save page", err) }()
+func (s Storage) Save(ctx context.Context, page *storage.Page) (err error) {
+	defer func() { err = e.WarpIfErr("can't save page in file: ", err) }()
 
 	fPath := filepath.Join(s.basePath, page.UserName)
 
@@ -53,8 +54,8 @@ func (s Storage) Save(page *storage.Page) (err error) {
 
 }
 
-func (s Storage) PickRandom(userName string) (page *storage.Page, err error) {
-	defer func() { err = e.WarpIfErr("can't pick random page", err) }()
+func (s Storage) PickRandom(ctx context.Context, userName string) (page *storage.Page, err error) {
+	defer func() { err = e.WarpIfErr("can't pick random page in file: ", err) }()
 
 	fPath := filepath.Join(s.basePath, userName)
 	files, err := os.ReadDir(fPath)
@@ -74,7 +75,7 @@ func (s Storage) PickRandom(userName string) (page *storage.Page, err error) {
 
 }
 
-func (s Storage) Remove(p *storage.Page) error {
+func (s Storage) Remove(ctx context.Context, p *storage.Page) error {
 	fileName, err := fileName(p)
 	if err != nil {
 		return e.Warp("can't remove file", err)
@@ -90,10 +91,10 @@ func (s Storage) Remove(p *storage.Page) error {
 	return nil
 }
 
-func (s Storage) IsExists(p *storage.Page) (bool, error) {
+func (s Storage) IsExists(ctx context.Context, p *storage.Page) (bool, error) {
 	fileName, err := fileName(p)
 	if err != nil {
-		return false, e.Warp("can't check if file exists", err)
+		return false, e.Warp("can't check if exists page in file", err)
 	}
 
 	fPath := filepath.Join(s.basePath, p.UserName, fileName)
@@ -113,7 +114,7 @@ func (s Storage) decodePage(filePath string) (*storage.Page, error) {
 	f, err := os.Open(filePath)
 
 	if err != nil {
-		return nil, e.Warp("can't decode", err)
+		return nil, e.Warp("can't decode page", err)
 	}
 
 	defer func() { _ = f.Close() }()
@@ -121,7 +122,7 @@ func (s Storage) decodePage(filePath string) (*storage.Page, error) {
 	var p storage.Page
 
 	if err := gob.NewDecoder(f).Decode(&p); err != nil {
-		return nil, e.Warp("can't decode", err)
+		return nil, e.Warp("can't decode page", err)
 	}
 
 	return &p, nil

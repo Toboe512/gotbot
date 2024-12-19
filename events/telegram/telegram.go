@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"errors"
 	"github.com/toboe512/gotbot/clients/telegram"
 	"github.com/toboe512/gotbot/events"
@@ -73,22 +74,22 @@ func event(udp telegram.Update) events.Event {
 	return res
 }
 
-func (p Processor) Process(event events.Event) error {
+func (p Processor) Process(ctx context.Context, event events.Event) error {
 	switch event.Type {
 	case events.Message:
-		return p.processMessage(event)
+		return p.processMessage(ctx, event)
 	default:
 		return e.Warp("can't process message", ErrUnknownType)
 	}
 }
 
-func (p *Processor) processMessage(event events.Event) error {
+func (p *Processor) processMessage(ctx context.Context, event events.Event) error {
 	meta, err := meta(event)
 	if err != nil {
 		return e.Warp("can't process message", err)
 	}
 
-	if err := p.doCmd(event.Text, meta.ChatID, meta.Username); err != nil {
+	if err := p.doCmd(ctx, event.Text, meta.ChatID, meta.Username); err != nil {
 		return e.Warp("can't process message", err)
 	}
 

@@ -1,6 +1,7 @@
 package telegram
 
 import (
+	"context"
 	"errors"
 	"github.com/toboe512/gotbot/clients/telegram"
 	"github.com/toboe512/gotbot/lib/e"
@@ -16,18 +17,18 @@ const (
 	StartCmd = "/start"
 )
 
-func (p *Processor) doCmd(text string, chatID int, username string) error {
+func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string) error {
 	text = strings.TrimSpace(text)
 
 	log.Printf("got new command '%s from '%s'", text, username)
 
 	if isAddCmd(text) {
-		return p.savePage(chatID, text, username)
+		return p.savePage(ctx, chatID, text, username)
 	}
 
 	switch text {
 	case RndCmd:
-		return p.sandRandom(chatID, username)
+		return p.sandRandom(ctx, chatID, username)
 	case HelpCmd:
 		return p.sendHelp(chatID)
 	case StartCmd:
@@ -38,7 +39,7 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 
 }
 
-func (p *Processor) savePage(chatID int, pageURL string, username string) (err error) {
+func (p *Processor) savePage(ctx context.Context, chatID int, pageURL string, username string) (err error) {
 	defer func() { err = e.WarpIfErr("can't do command: save page", err) }()
 
 	sendMsg := NewMessageSender(chatID, p.tg)
@@ -48,7 +49,7 @@ func (p *Processor) savePage(chatID int, pageURL string, username string) (err e
 		UserName: username,
 	}
 
-	isExists, err := p.storage.IsExists(page)
+	isExists, err := p.storage.IsExists(ctx, page)
 
 	if err != nil {
 		return err
@@ -58,7 +59,7 @@ func (p *Processor) savePage(chatID int, pageURL string, username string) (err e
 		return sendMsg(msgAlreadyExists)
 	}
 
-	if err := p.storage.Save(page); err != nil {
+	if err := p.storage.Save(ctx, page); err != nil {
 		return err
 	}
 
@@ -69,12 +70,12 @@ func (p *Processor) savePage(chatID int, pageURL string, username string) (err e
 	return nil
 }
 
-func (p *Processor) sandRandom(chatID int, username string) (err error) {
+func (p *Processor) sandRandom(ctx context.Context, chatID int, username string) (err error) {
 	defer func() { err = e.WarpIfErr("can't do command: can't send random", err) }()
 
 	sendMsg := NewMessageSender(chatID, p.tg)
 
-	page, err := p.storage.PickRandom(username)
+	page, err := p.storage.PickRandom(ctx, username)
 	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
 		return err
 	}
@@ -87,7 +88,7 @@ func (p *Processor) sandRandom(chatID int, username string) (err error) {
 		return err
 	}
 
-	return p.storage.Remove(page)
+	return p.storage.Remove(ctx, page)
 }
 
 func (p *Processor) sendHelp(chatID int) error {

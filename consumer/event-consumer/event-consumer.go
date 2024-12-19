@@ -1,6 +1,7 @@
 package event_consumer
 
 import (
+	"context"
 	"github.com/toboe512/gotbot/events"
 	"log"
 	"time"
@@ -19,7 +20,7 @@ func New(fetcher events.Fetcher, processor events.Processor, batchSize int) Cons
 		batchSize: batchSize}
 }
 
-func (c Consumer) Start() error {
+func (c Consumer) Start(ctx context.Context) error {
 	for {
 		gotEvents, err := c.fetcher.Fetch(c.batchSize)
 		if err != nil {
@@ -32,7 +33,7 @@ func (c Consumer) Start() error {
 			continue
 		}
 
-		if err := c.handleEvents(gotEvents); err != nil {
+		if err := c.handleEvents(ctx, gotEvents); err != nil {
 			log.Print(err)
 			continue
 		}
@@ -46,12 +47,12 @@ TODO 1) Потеря событий: ретрай, возвращение в х�
 TODO 2) Обработка всей пачки: останавливаться после первой ошибки, счётчик ошибок
 TODO 3) Параллельная обработка событий sync.WaitGroup{}
 */
-func (c Consumer) handleEvents(events []events.Event) error {
+func (c Consumer) handleEvents(ctx context.Context, events []events.Event) error {
 
 	for _, event := range events {
 		log.Printf("got new event: %s", event.Text)
 
-		if err := c.processor.Process(event); err != nil {
+		if err := c.processor.Process(ctx, event); err != nil {
 			log.Printf("can't handle event: %s", err.Error())
 			continue
 		}
