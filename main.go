@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
-	tgClient "goTBot/clients/telegram"
-	"goTBot/consumer/event-consumer"
-	"goTBot/events/telegram"
-	"goTBot/storage/files"
+	tgClient "github.com/toboe512/gotbot/clients/telegram"
+	"github.com/toboe512/gotbot/consumer/event-consumer"
+	"github.com/toboe512/gotbot/events/telegram"
+	"github.com/toboe512/gotbot/storage/files"
 	"log"
 )
 

@@ -2,10 +2,10 @@ package telegram
 
 import (
 	"errors"
-	"goTBot/clients/telegram"
-	"goTBot/events"
-	"goTBot/lib/e"
-	"goTBot/storage"
+	"github.com/toboe512/gotbot/clients/telegram"
+	"github.com/toboe512/gotbot/events"
+	"github.com/toboe512/gotbot/lib/e"
+	"github.com/toboe512/gotbot/storage"
 )
 
 type Processor struct {

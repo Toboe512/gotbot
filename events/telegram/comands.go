@@ -2,9 +2,9 @@ package telegram
 
 import (
 	"errors"
-	"goTBot/clients/telegram"
-	"goTBot/lib/e"
-	"goTBot/storage"
+	"github.com/toboe512/gotbot/clients/telegram"
+	"github.com/toboe512/gotbot/lib/e"
+	"github.com/toboe512/gotbot/storage"
 	"log"
 	"net/url"
 	"strings"

@@ -2,7 +2,7 @@ package telegram
 
 import (
 	"encoding/json"
-	"goTBot/lib/e"
+	"github.com/toboe512/gotbot/lib/e"
 	"io"
 	"log"
 	"net/http"

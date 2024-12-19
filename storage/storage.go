@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 
-	"goTBot/lib/e"
+	"github.com/toboe512/gotbot/lib/e"
 )
 
 type Storage interface {

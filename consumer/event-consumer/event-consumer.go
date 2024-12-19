@@ -1,7 +1,7 @@
 package event_consumer
 
 import (
-	"goTBot/events"
+	"github.com/toboe512/gotbot/events"
 	"log"
 	"time"
 )

@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"goTBot/lib/e"
-	"goTBot/storage"
+	"github.com/toboe512/gotbot/lib/e"
+	"github.com/toboe512/gotbot/storage"
 )
 
 type Storage struct {

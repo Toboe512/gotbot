@@ -1,1 +1,1 @@
-module goTBot
+module github.com/toboe512/gotbot
