@@ -23,16 +23,16 @@ func New(basePath string) Storage {
 	return Storage{basePath: basePath}
 }
 
-func (s Storage) Save(ctx context.Context, page *storage.Page) (err error) {
-	defer func() { err = e.WarpIfErr("can't save page in file: ", err) }()
+func (s Storage) Save(ctx context.Context, row *storage.Row) (err error) {
+	defer func() { err = e.WarpIfErr("can't save row in file: ", err) }()
 
-	fPath := filepath.Join(s.basePath, page.UserName)
+	fPath := filepath.Join(s.basePath, row.UserName)
 
 	if err := os.MkdirAll(fPath, defaultPerm); err != nil {
 		return err
 	}
 
-	fName, err := fileName(page)
+	fName, err := fileName(row)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (s Storage) Save(ctx context.Context, page *storage.Page) (err error) {
 
 	defer func() { _ = file.Close() }()
 
-	if err := gob.NewEncoder(file).Encode(page); err != nil {
+	if err := gob.NewEncoder(file).Encode(row); err != nil {
 		return err
 	}
 
@@ -54,8 +54,8 @@ func (s Storage) Save(ctx context.Context, page *storage.Page) (err error) {
 
 }
 
-func (s Storage) PickRandom(ctx context.Context, userName string) (page *storage.Page, err error) {
-	defer func() { err = e.WarpIfErr("can't pick random page in file: ", err) }()
+func (s Storage) PickRandom(ctx context.Context, userName string) (row *storage.Row, err error) {
+	defer func() { err = e.WarpIfErr("can't pick random row in file: ", err) }()
 
 	fPath := filepath.Join(s.basePath, userName)
 	files, err := os.ReadDir(fPath)
@@ -75,13 +75,18 @@ func (s Storage) PickRandom(ctx context.Context, userName string) (page *storage
 
 }
 
-func (s Storage) Remove(ctx context.Context, p *storage.Page) error {
-	fileName, err := fileName(p)
+func (s *Storage) GetByPwd(ctx context.Context, userName string, pwd string) (row *storage.Row, err error) {
+	//TODO реализовать метод
+	return nil, nil
+}
+
+func (s Storage) Remove(ctx context.Context, row *storage.Row) error {
+	fileName, err := fileName(row)
 	if err != nil {
 		return e.Warp("can't remove file", err)
 	}
 
-	fPath := filepath.Join(s.basePath, p.UserName, fileName)
+	fPath := filepath.Join(s.basePath, row.UserName, fileName)
 
 	if err := os.Remove(fPath); err != nil {
 		msg := fmt.Sprintf("can't remove file %s", fPath)
@@ -91,13 +96,13 @@ func (s Storage) Remove(ctx context.Context, p *storage.Page) error {
 	return nil
 }
 
-func (s Storage) IsExists(ctx context.Context, p *storage.Page) (bool, error) {
-	fileName, err := fileName(p)
+func (s Storage) IsExists(ctx context.Context, row *storage.Row) (bool, error) {
+	fileName, err := fileName(row)
 	if err != nil {
 		return false, e.Warp("can't check if exists page in file", err)
 	}
 
-	fPath := filepath.Join(s.basePath, p.UserName, fileName)
+	fPath := filepath.Join(s.basePath, row.UserName, fileName)
 
 	switch _, err = os.Stat(fPath); {
 	case errors.Is(err, os.ErrNotExist):
@@ -110,7 +115,7 @@ func (s Storage) IsExists(ctx context.Context, p *storage.Page) (bool, error) {
 	return true, nil
 }
 
-func (s Storage) decodePage(filePath string) (*storage.Page, error) {
+func (s Storage) decodePage(filePath string) (*storage.Row, error) {
 	f, err := os.Open(filePath)
 
 	if err != nil {
@@ -119,15 +124,15 @@ func (s Storage) decodePage(filePath string) (*storage.Page, error) {
 
 	defer func() { _ = f.Close() }()
 
-	var p storage.Page
+	var row storage.Row
 
-	if err := gob.NewDecoder(f).Decode(&p); err != nil {
+	if err := gob.NewDecoder(f).Decode(&row); err != nil {
 		return nil, e.Warp("can't decode page", err)
 	}
 
-	return &p, nil
+	return &row, nil
 }
 
-func fileName(p *storage.Page) (string, error) {
-	return p.Hash()
+func fileName(row *storage.Row) (string, error) {
+	return row.Hash()
 }

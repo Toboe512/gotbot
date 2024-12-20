@@ -7,6 +7,8 @@ import (
 	"github.com/toboe512/gotbot/events"
 	"github.com/toboe512/gotbot/lib/e"
 	"github.com/toboe512/gotbot/storage"
+	"github.com/toboe512/gotbot/utils"
+	"log"
 )
 
 type Processor struct {
@@ -15,9 +17,11 @@ type Processor struct {
 	storage storage.Storage
 }
 
+// Meta Структура с данными которые получаем от пользователя.
 type Meta struct {
 	ChatID   int
 	Username string
+	ImageID  string
 }
 
 var (
@@ -56,18 +60,30 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	return res, nil
 }
 
+// event метод в котором по сути происходит мепинг Update в Event с заполнением структуры Meta.
 func event(udp telegram.Update) events.Event {
 	udpType := fetchType(udp)
+
+	log.Printf("Тип: %s", udpType)
 
 	res := events.Event{
 		Type: udpType,
 		Text: fetchText(udp),
 	}
 
-	if udpType == events.Message {
+	//TODO реализовать возможность сохранения нескольких фото
+	img := utils.EmptyStr
+	if udp.Message.Photo != nil {
+		img = udp.Message.Photo[0].FileID
+	}
+
+	log.Printf("Текст %s", fetchText(udp))
+
+	if udpType != events.Unknown {
 		res.Meta = Meta{
 			ChatID:   udp.Message.Chat.ID,
 			Username: udp.Message.From.UserName,
+			ImageID:  img,
 		}
 	}
 
@@ -76,7 +92,7 @@ func event(udp telegram.Update) events.Event {
 
 func (p Processor) Process(ctx context.Context, event events.Event) error {
 	switch event.Type {
-	case events.Message:
+	case events.Message, events.Image:
 		return p.processMessage(ctx, event)
 	default:
 		return e.Warp("can't process message", ErrUnknownType)
@@ -89,7 +105,7 @@ func (p *Processor) processMessage(ctx context.Context, event events.Event) erro
 		return e.Warp("can't process message", err)
 	}
 
-	if err := p.doCmd(ctx, event.Text, meta.ChatID, meta.Username); err != nil {
+	if err := p.doCmd(ctx, event.Text, meta.ChatID, meta.Username, meta.ImageID); err != nil {
 		return e.Warp("can't process message", err)
 	}
 
@@ -106,11 +122,14 @@ func meta(event events.Event) (Meta, error) {
 }
 
 func fetchText(udp telegram.Update) string {
-	if udp.Message == nil {
-		return ""
+	switch fetchType(udp) {
+	case events.Message:
+		return udp.Message.Text
+	case events.Image:
+		return udp.Message.Caption
+	default:
+		return utils.EmptyStr
 	}
-
-	return udp.Message.Text
 }
 
 func fetchType(udp telegram.Update) events.Type {
@@ -118,5 +137,9 @@ func fetchType(udp telegram.Update) events.Type {
 		return events.Unknown
 	}
 
-	return events.Message
+	if udp.Message.Photo == nil || len(udp.Message.Photo) == 0 {
+		return events.Message
+	}
+
+	return events.Image
 }

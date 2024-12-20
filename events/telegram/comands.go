@@ -6,50 +6,78 @@ import (
 	"github.com/toboe512/gotbot/clients/telegram"
 	"github.com/toboe512/gotbot/lib/e"
 	"github.com/toboe512/gotbot/storage"
+	"github.com/toboe512/gotbot/utils"
 	"log"
 	"net/url"
 	"strings"
 )
 
 const (
-	RndCmd   = "/rnd"
-	HelpCmd  = "/help"
+	botName  = "@SpecIAlLisBot"
 	StartCmd = "/start"
+	HelpCmd  = "/help"
+	RmvCmd   = "/remove"
+	SaveCmd  = "/save"
+	GetCmd   = "/get"
 )
 
-func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string) error {
+func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string, photo string) error {
 	text = strings.TrimSpace(text)
+	cmd := strings.Split(text, utils.SpaseStr)
 
 	log.Printf("got new command '%s from '%s'", text, username)
 
-	if isAddCmd(text) {
-		return p.savePage(ctx, chatID, text, username)
-	}
-
-	switch text {
-	case RndCmd:
-		return p.sandRandom(ctx, chatID, username)
-	case HelpCmd:
-		return p.sendHelp(chatID)
+	switch cmd[0] {
 	case StartCmd:
 		return p.sendHello(chatID)
+	case HelpCmd:
+		return p.sendHelp(chatID)
+	case RmvCmd:
+		if len(cmd) < 2 {
+			return p.sendHelp(chatID)
+		}
+		pwd := utils.StringToSha256(cmd[1])
+
+		return p.removeRow(ctx, chatID, username, pwd)
+	case SaveCmd:
+		if len(cmd) < 2 {
+			return p.sendHelp(chatID)
+		}
+		pwd := utils.StringToSha256(cmd[1])
+
+		if photo != utils.EmptyStr {
+			return p.saveRow(ctx, chatID, photo, username, pwd)
+		}
+
+		if len(cmd) == 3 && isURL(cmd[2]) {
+			return p.saveRow(ctx, chatID, cmd[2], username, pwd)
+		}
+		return nil
+	case GetCmd:
+		if len(cmd) < 2 {
+			return p.sendHelp(chatID)
+		}
+		pwd := utils.StringToSha256(cmd[1])
+
+		return p.getData(ctx, chatID, username, pwd)
+
 	default:
 		return p.tg.SendMessage(chatID, msgUnknownCommand)
 	}
-
 }
 
-func (p *Processor) savePage(ctx context.Context, chatID int, pageURL string, username string) (err error) {
-	defer func() { err = e.WarpIfErr("can't do command: save page", err) }()
+func (p *Processor) saveRow(ctx context.Context, chatID int, data string, username string, pwd string) (err error) {
+	defer func() { err = e.WarpIfErr("can't do command: save row", err) }()
 
 	sendMsg := NewMessageSender(chatID, p.tg)
 
-	page := &storage.Page{
-		URL:      pageURL,
+	row := &storage.Row{
+		Data:     data,
 		UserName: username,
+		PWD:      pwd,
 	}
 
-	isExists, err := p.storage.IsExists(ctx, page)
+	isExists, err := p.storage.IsExists(ctx, row)
 
 	if err != nil {
 		return err
@@ -59,7 +87,7 @@ func (p *Processor) savePage(ctx context.Context, chatID int, pageURL string, us
 		return sendMsg(msgAlreadyExists)
 	}
 
-	if err := p.storage.Save(ctx, page); err != nil {
+	if err := p.storage.Save(ctx, row); err != nil {
 		return err
 	}
 
@@ -70,25 +98,37 @@ func (p *Processor) savePage(ctx context.Context, chatID int, pageURL string, us
 	return nil
 }
 
-func (p *Processor) sandRandom(ctx context.Context, chatID int, username string) (err error) {
-	defer func() { err = e.WarpIfErr("can't do command: can't send random", err) }()
+func (p *Processor) removeRow(ctx context.Context, chatID int, username string, pwd string) (err error) {
+	defer func() { err = e.WarpIfErr("can't do command: remove", err) }()
 
 	sendMsg := NewMessageSender(chatID, p.tg)
 
-	page, err := p.storage.PickRandom(ctx, username)
-	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
+	row := &storage.Row{
+		UserName: username,
+		PWD:      pwd,
+	}
+
+	isExists, err := p.storage.IsExists(ctx, row)
+
+	if err != nil {
 		return err
 	}
 
-	if errors.Is(err, storage.ErrNoSavedPages) {
-		return sendMsg(msgNoSavedPages)
+	if !isExists {
+		return sendMsg(msgNoRemoved)
 	}
 
-	if err := sendMsg(page.URL); err != nil {
+	err = p.storage.Remove(ctx, row)
+
+	if err != nil {
 		return err
 	}
 
-	return p.storage.Remove(ctx, page)
+	if err := sendMsg(msgRemoved); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (p *Processor) sendHelp(chatID int) error {
@@ -99,17 +139,48 @@ func (p *Processor) sendHello(chatID int) error {
 	return p.tg.SendMessage(chatID, msgHello)
 }
 
+func (p *Processor) getData(ctx context.Context, chatID int, username string, pwd string) (err error) {
+	defer func() { err = e.WarpIfErr("can't do command: can't send random", err) }()
+
+	sendMsg := NewMessageSender(chatID, p.tg)
+
+	row, err := p.storage.GetByPwd(ctx, username, pwd)
+	if err != nil && !errors.Is(err, storage.ErrNoSavedPages) {
+		return err
+	}
+
+	if errors.Is(err, storage.ErrNoSavedPages) {
+		return sendMsg(msgNoSavedPages)
+	}
+
+	if isURL(row.Data) {
+		if err := sendMsg(row.Data); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	sendPhoto := NewPhotoSender(chatID, p.tg)
+	if err := sendPhoto(row.Data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func NewMessageSender(chatID int, tg *telegram.Client) func(string) error {
 	return func(msg string) error {
 		return tg.SendMessage(chatID, msg)
 	}
 }
 
-func isAddCmd(text string) bool {
-	return isURL(text)
+func NewPhotoSender(chatID int, tg *telegram.Client) func(string) error {
+	return func(photoID string) error {
+		return tg.SendPhoto(chatID, photoID)
+	}
 }
 
 func isURL(text string) bool {
 	u, err := url.Parse(text)
-	return err == nil && u.Host != ""
+	return err == nil && u.Host != utils.EmptyStr
 }

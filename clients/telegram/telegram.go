@@ -20,6 +20,7 @@ type Client struct {
 const (
 	getUpdatesMethod  = "getUpdates"
 	sensMessageMethod = "sendMessage"
+	sendPhoto         = "sendPhoto"
 )
 
 func New(host string, token string) *Client {
@@ -62,6 +63,20 @@ func (c Client) SendMessage(chatID int, text string) error {
 	q.Add("text", text)
 
 	_, err := c.doRequest(sensMessageMethod, q)
+
+	if err != nil {
+		return e.Warp("can't send message", err)
+	}
+
+	return nil
+}
+
+func (c Client) SendPhoto(chatID int, photoID string) error {
+	q := url.Values{}
+	q.Add("chat_id", strconv.Itoa(chatID))
+	q.Add("photo", photoID)
+
+	_, err := c.doRequest(sendPhoto, q)
 
 	if err != nil {
 		return e.Warp("can't send message", err)

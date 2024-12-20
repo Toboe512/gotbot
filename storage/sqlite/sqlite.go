@@ -25,61 +25,83 @@ func New(path string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Save(ctx context.Context, p *storage.Page) error {
-	q := `INSERT INTO pages (url, user_name) VALUES (?, ?)`
+func (s *Storage) Save(ctx context.Context, row *storage.Row) error {
+	q := `INSERT INTO usr_data (user_name, pwd, data) VALUES (?, ?, ?)`
 
-	if _, err := s.db.ExecContext(ctx, q, p.URL, p.UserName); err != nil {
-		return fmt.Errorf("can't save page in sqlite: %w", err)
+	if _, err := s.db.ExecContext(ctx, q, row.UserName, row.PWD, row.Data); err != nil {
+		return fmt.Errorf("can't save row in sqlite: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Storage) PickRandom(ctx context.Context, userName string) (*storage.Page, error) {
-	q := `SELECT url FROM pages WHERE  user_name = ? ORDER BY RANDOM() LIMIT 1`
+func (s *Storage) PickRandom(ctx context.Context, userName string) (*storage.Row, error) {
+	q := `SELECT data FROM usr_data WHERE  user_name = ? ORDER BY RANDOM() LIMIT 1`
 
-	var url string
+	var imgID string
 
-	err := s.db.QueryRowContext(ctx, q, userName).Scan(&url)
+	err := s.db.QueryRowContext(ctx, q, userName).Scan(&imgID)
 
 	if err == sql.ErrNoRows {
 		return nil, storage.ErrNoSavedPages
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("can't pick random page in sqlite: %w", err)
+		return nil, fmt.Errorf("can't pick random row in sqlite: %w", err)
 	}
 
-	return &storage.Page{
-		URL:      url,
+	return &storage.Row{
+		Data:     imgID,
 		UserName: userName,
 	}, nil
 }
 
-func (s *Storage) Remove(ctx context.Context, p *storage.Page) error {
-	q := `DELETE FROM page WHERE url = ? AND user_name = ?`
+func (s *Storage) GetByPwd(ctx context.Context, userName string, pwd string) (*storage.Row, error) {
+	q := `SELECT data FROM usr_data WHERE user_name = ? AND pwd = ?`
 
-	if _, err := s.db.ExecContext(ctx, q, p.URL, p.UserName); err != nil {
-		return fmt.Errorf("can't remove page in sqlite: %w", err)
+	var data string
+
+	err := s.db.QueryRowContext(ctx, q, userName, pwd).Scan(&data)
+
+	if err == sql.ErrNoRows {
+		return nil, storage.ErrNoSavedPages
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't get by row pwd in sqlite: %w", err)
+	}
+
+	return &storage.Row{
+		Data:     data,
+		UserName: userName,
+		PWD:      pwd,
+	}, nil
+}
+
+func (s *Storage) Remove(ctx context.Context, row *storage.Row) error {
+	q := `DELETE FROM usr_data WHERE user_name = ? AND pwd = ?`
+
+	if _, err := s.db.ExecContext(ctx, q, row.UserName, row.PWD); err != nil {
+		return fmt.Errorf("can't remove row in sqlite: %w", err)
 	}
 
 	return nil
 }
 
-func (s *Storage) IsExists(ctx context.Context, p *storage.Page) (bool, error) {
-	q := `SELECT COUNT(*) FROM pages WHERE url = ? AND user_name = ?`
+func (s *Storage) IsExists(ctx context.Context, p *storage.Row) (bool, error) {
+	q := `SELECT COUNT(*) FROM usr_data WHERE user_name = ? AND pwd = ?`
 
 	var count int
 
-	if err := s.db.QueryRowContext(ctx, q, p.URL, p.UserName).Scan(&count); err != nil {
-		return false, fmt.Errorf("can't check if exists page in sqlite: %w", err)
+	if err := s.db.QueryRowContext(ctx, q, p.UserName, p.PWD).Scan(&count); err != nil {
+		return false, fmt.Errorf("can't check if exists row in sqlite: %w", err)
 	}
 
 	return count > 0, nil
 }
 
 func (s *Storage) Init(ctx context.Context) error {
-	q := `CREATE TABLE IF NOT EXISTS pages (url TEXT, user_name TEXT)`
+	q := `CREATE TABLE IF NOT EXISTS usr_data (user_name TEXT, pwd TEXT, data TEXT)`
 
 	_, err := s.db.ExecContext(ctx, q)
 

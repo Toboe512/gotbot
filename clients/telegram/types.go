@@ -19,15 +19,25 @@ type Update struct {
 }
 
 type Message struct {
-	MessageID            int    `json:"message_id"`
-	MessageThreadID      int    `json:"message_thread_id"`
-	From                 User   `json:"from"`
-	SenderChat           Chat   `json:"sender_chat"`
-	SanderBusinessBot    User   `json:"sander_business_bot"`
-	Date                 int    `json:"date"`
-	BusinessConnectionID string `json:"business_connection_id"`
-	Chat                 Chat   `json:"chat"`
-	Text                 string `json:"text"`
+	MessageID            int         `json:"message_id"`
+	MessageThreadID      int         `json:"message_thread_id"`
+	From                 User        `json:"from"`
+	SenderChat           Chat        `json:"sender_chat"`
+	SanderBusinessBot    User        `json:"sander_business_bot"`
+	Date                 int         `json:"date"`
+	BusinessConnectionID string      `json:"business_connection_id"`
+	Chat                 Chat        `json:"chat"`
+	Text                 string      `json:"text"`
+	Photo                []PhotoSize `json:"photo"`
+	Caption              string      `json:"caption"`
+}
+
+type PhotoSize struct {
+	FileID       string `json:"file_id"`
+	FileUniqueID string `json:"file_unique_id"`
+	Width        int    `json:"width"`
+	Height       int    `json:"height"`
+	FileSize     int    `json:"file_size"`
 }
 
 type User struct {

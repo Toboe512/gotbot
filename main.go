@@ -7,8 +7,8 @@ import (
 	"github.com/toboe512/gotbot/consumer/event-consumer"
 	"github.com/toboe512/gotbot/events/telegram"
 	"github.com/toboe512/gotbot/storage"
-	"github.com/toboe512/gotbot/storage/files"
 	"github.com/toboe512/gotbot/storage/sqlite"
+	"github.com/toboe512/gotbot/utils"
 	"log"
 )
 
@@ -21,12 +21,12 @@ const (
 
 func main() {
 	ctx := context.TODO()
-
-	s := getSqliteStorage(ctx, storageSqlitePath)
+	tkn := mastToken()
+	str := getSqliteStorage(ctx, storageSqlitePath)
 
 	eventsProcessor := telegram.New(
-		tgClient.New(tgBotHost, mastToken()),
-		s,
+		tgClient.New(tgBotHost, tkn),
+		str,
 	)
 
 	log.Print("service started")
@@ -45,24 +45,24 @@ func main() {
 func mastToken() string {
 	token := flag.String(
 		"tg-bot-token",
-		"",
+		utils.EmptyStr,
 		"token for access to telegram bot",
 	)
 	flag.Parse()
 
-	if *token == "" {
+	if *token == utils.EmptyStr {
 		log.Fatal("token is not specified")
 	}
 
 	return *token
 }
 
-func getFileStorage(path string) storage.Storage {
-	return files.New(storageFilePath)
-}
+//func getFileStorage(path string) storage.Storage {
+//	return files.New(storageFilePath)
+//}
 
 func getSqliteStorage(ctx context.Context, path string) storage.Storage {
-	s, err := sqlite.New(storageSqlitePath)
+	s, err := sqlite.New(path)
 
 	if err != nil {
 		log.Fatal("can't connect to sqlite: %w", err)
