@@ -5,15 +5,13 @@ import (
 	"crypto/sha1"
 	"errors"
 	"fmt"
+	"github.com/toboe512/gotbot/lib/e"
 	"github.com/toboe512/gotbot/utils"
 	"io"
-
-	"github.com/toboe512/gotbot/lib/e"
 )
 
 type Storage interface {
 	Save(ctx context.Context, r *Row) error
-	PickRandom(ctx context.Context, userName string) (*Row, error)
 	GetByPwd(ctx context.Context, userName string, pwd string) (*Row, error)
 	Remove(ctx context.Context, r *Row) error
 	IsExists(ctx context.Context, r *Row) (bool, error)
@@ -25,7 +23,8 @@ type Row struct {
 	Data     string
 }
 
-var ErrNoSavedPages = errors.New("no saved pages")
+var ErrNoSavedData = errors.New("no saved pages")
+var ErrNoLoadData = errors.New("no load data")
 
 func (p Row) Hash() (string, error) {
 	h := sha1.New()

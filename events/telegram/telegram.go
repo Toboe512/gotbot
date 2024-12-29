@@ -8,7 +8,6 @@ import (
 	"github.com/toboe512/gotbot/lib/e"
 	"github.com/toboe512/gotbot/storage"
 	"github.com/toboe512/gotbot/utils"
-	"log"
 )
 
 type Processor struct {
@@ -43,13 +42,11 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	if err != nil {
 		return nil, e.Warp("can't get events", err)
 	}
-
 	if len(updates) == 0 {
 		return nil, nil
 	}
 
 	res := make([]events.Event, 0, len(updates))
-
 	for _, u := range updates {
 		res = append(res, event(u))
 
@@ -64,8 +61,6 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 func event(udp telegram.Update) events.Event {
 	udpType := fetchType(udp)
 
-	log.Printf("Тип: %s", udpType)
-
 	res := events.Event{
 		Type: udpType,
 		Text: fetchText(udp),
@@ -76,8 +71,6 @@ func event(udp telegram.Update) events.Event {
 	if udp.Message.Photo != nil {
 		img = udp.Message.Photo[0].FileID
 	}
-
-	log.Printf("Текст %s", fetchText(udp))
 
 	if udpType != events.Unknown {
 		res.Meta = Meta{

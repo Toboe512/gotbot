@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"github.com/toboe512/gotbot/lib/e"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"path"
@@ -39,19 +38,13 @@ func (c *Client) Updates(offset int, limit int) (updates []Update, err error) {
 	q.Add("limit", strconv.Itoa(limit))
 
 	data, err := c.doRequest(getUpdatesMethod, q)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var resp UpdatesResponse
-
 	if err := json.Unmarshal(data, &resp); err != nil {
 		return nil, err
-	}
-
-	if len(resp.Result) != 0 {
-		log.Print(resp.Result[0].Message.Chat.IsForum)
 	}
 
 	return resp.Result, nil
@@ -63,7 +56,6 @@ func (c Client) SendMessage(chatID int, text string) error {
 	q.Add("text", text)
 
 	_, err := c.doRequest(sensMessageMethod, q)
-
 	if err != nil {
 		return e.Warp("can't send message", err)
 	}
@@ -77,9 +69,8 @@ func (c Client) SendPhoto(chatID int, photoID string) error {
 	q.Add("photo", photoID)
 
 	_, err := c.doRequest(sendPhoto, q)
-
 	if err != nil {
-		return e.Warp("can't send message", err)
+		return e.Warp("can't send photo", err)
 	}
 
 	return nil
@@ -105,7 +96,6 @@ func (c *Client) doRequest(method string, query url.Values) (data []byte, err er
 
 	req.URL.RawQuery = query.Encode()
 	resp, err := c.client.Do(req)
-
 	if err != nil {
 		return nil, e.WarpIfErr("can't do request", err)
 	}

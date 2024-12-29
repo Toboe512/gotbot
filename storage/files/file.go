@@ -65,7 +65,7 @@ func (s Storage) PickRandom(ctx context.Context, userName string) (row *storage.
 	}
 
 	if len(files) == 0 {
-		return nil, storage.ErrNoSavedPages
+		return nil, storage.ErrNoSavedData
 	}
 
 	n := rand.Intn(len(files))

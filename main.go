@@ -22,11 +22,13 @@ const (
 func main() {
 	ctx := context.TODO()
 	tkn := mastToken()
-	str := getSqliteStorage(ctx, storageSqlitePath)
+
+	// stg := files.New(storageFilePath)
+	stg := getSqliteStorage(ctx, storageSqlitePath)
 
 	eventsProcessor := telegram.New(
 		tgClient.New(tgBotHost, tkn),
-		str,
+		stg,
 	)
 
 	log.Print("service started")
@@ -56,10 +58,6 @@ func mastToken() string {
 
 	return *token
 }
-
-//func getFileStorage(path string) storage.Storage {
-//	return files.New(storageFilePath)
-//}
 
 func getSqliteStorage(ctx context.Context, path string) storage.Storage {
 	s, err := sqlite.New(path)
