@@ -19,7 +19,43 @@ const (
 	GetCmd   = "/get"
 )
 
-func (p *Processor) doCmd(ctx context.Context, text string, chatID int, username string, photo string) error {
+func (p Processor) SetCmd() error {
+	commands := []telegram.BotCommand{
+		{
+			Command:     StartCmd,
+			Description: "Запуск бота и получение справки",
+		},
+		{
+			Command:     HelpCmd,
+			Description: "Справка",
+		},
+		{
+			Command:     RmvCmd,
+			Description: "Удаление",
+		},
+		{
+			Command:     SaveCmd,
+			Description: "Сохранение",
+		},
+		{
+			Command:     GetCmd,
+			Description: "Получение",
+		},
+	}
+
+	err := p.tg.DeleteCmd()
+	if err != nil {
+		return err
+	}
+
+	err = p.tg.SetCmd(commands)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *Processor) DoCmd(ctx context.Context, text string, chatID int, username string, photo string) error {
 	text = strings.TrimSpace(text)
 	cmd := strings.Split(text, utils.SpaseStr)
 

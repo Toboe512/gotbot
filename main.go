@@ -30,6 +30,10 @@ func main() {
 		tgClient.New(tgBotHost, tkn),
 		stg,
 	)
+	err := eventsProcessor.SetCmd()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	log.Print("service started")
 

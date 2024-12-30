@@ -57,3 +57,17 @@ type Chat struct {
 	LastName  string `json:"last_name"`
 	IsForum   bool   `json:"is_forum"`
 }
+
+type Commands struct {
+	Commands []BotCommand `json:"commands"`
+}
+
+type BotCommand struct {
+	Command     string `json:"command"`
+	Description string `json:"description"`
+}
+
+type BaseResult struct {
+	OK     bool `json:"ok"`
+	Result bool `json:"result"`
+}

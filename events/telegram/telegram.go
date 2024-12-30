@@ -57,6 +57,15 @@ func (p *Processor) Fetch(limit int) ([]events.Event, error) {
 	return res, nil
 }
 
+func (p Processor) Process(ctx context.Context, event events.Event) error {
+	switch event.Type {
+	case events.Message, events.Image:
+		return p.processMessage(ctx, event)
+	default:
+		return e.Warp("can't process message", ErrUnknownType)
+	}
+}
+
 // event метод в котором по сути происходит мепинг Update в Event с заполнением структуры Meta.
 func event(udp telegram.Update) events.Event {
 	udpType := fetchType(udp)
@@ -83,22 +92,13 @@ func event(udp telegram.Update) events.Event {
 	return res
 }
 
-func (p Processor) Process(ctx context.Context, event events.Event) error {
-	switch event.Type {
-	case events.Message, events.Image:
-		return p.processMessage(ctx, event)
-	default:
-		return e.Warp("can't process message", ErrUnknownType)
-	}
-}
-
 func (p *Processor) processMessage(ctx context.Context, event events.Event) error {
 	meta, err := meta(event)
 	if err != nil {
 		return e.Warp("can't process message", err)
 	}
 
-	if err := p.doCmd(ctx, event.Text, meta.ChatID, meta.Username, meta.ImageID); err != nil {
+	if err := p.DoCmd(ctx, event.Text, meta.ChatID, meta.Username, meta.ImageID); err != nil {
 		return e.Warp("can't process message", err)
 	}
 

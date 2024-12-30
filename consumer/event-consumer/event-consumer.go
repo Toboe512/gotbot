@@ -27,17 +27,14 @@ func (c Consumer) Start(ctx context.Context) error {
 			log.Printf("[ERR] consumer: %s", err.Error())
 			continue
 		}
-
 		if len(gotEvents) == 0 {
 			time.Sleep(1 * time.Second)
 			continue
 		}
-
 		if err := c.handleEvents(ctx, gotEvents); err != nil {
 			log.Print(err)
 			continue
 		}
-
 	}
 }
 
@@ -57,6 +54,5 @@ func (c Consumer) handleEvents(ctx context.Context, events []events.Event) error
 			continue
 		}
 	}
-
 	return nil
 }
